@@ -4,6 +4,7 @@ import File.ReadFile;
 import File.Word;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Stack;
 
 /**
  * @author kunrong
@@ -12,6 +13,7 @@ import java.util.List;
 public class GrammaticalAnalysis {
     private List<Word> words  = null;
     private List<Expression> expressions = new ArrayList<>();
+    private List<Error> errors = new ArrayList<>();
     private int index = 0;//记录到哪个word
     private int syn = 0; //种别码
     private boolean isSuccess = true;
@@ -19,6 +21,8 @@ public class GrammaticalAnalysis {
     private static int count = 0;
     private static int while_line =0;
     private static int if_line = 0;
+    private Stack<Integer> whileStack = new Stack();
+    private Stack<Integer> ifStack = new Stack<>();
 
 
     public GrammaticalAnalysis(List<Word> words) {
@@ -60,6 +64,8 @@ public class GrammaticalAnalysis {
         while (syn == 2|| syn == 3||syn==10 || syn== 4|| syn == 7) {// int, char, if , while, 变量
             statement();
         }
+        dealIrrevelant();
+        dealWithError();
     }
 
     /**
@@ -118,21 +124,37 @@ public class GrammaticalAnalysis {
                 syn = words.get(index).getTypenum();
                 match(26);//(
                 if_line = expCount+1;
+                ifStack.push(if_line);
                 condition();
                 match(27);//)
                 statement_Block();
+                if_line = ifStack.pop();
                 recover(if_line);
+                if (syn == 5) {
+                    NewExp exp3 = new NewExp(++expCount,"goto","","",0,"");
+                    expressions.add(exp3);
+                    recover(if_line);
+                    ifStack.push(expCount-2);
+                    index++;
+                    syn = words.get(index).getTypenum();
+                    statement_Block();
+                    if_line = ifStack.pop();
+                    recover(if_line);
+                }
                 break;
             case 7://while
                 index++;
                 syn = words.get(index).getTypenum();
                 match(26);//(
                 while_line = expCount+1;
+                whileStack.push(while_line);
                 condition();
                 match(27);//)
                 statement_Block();
+                while_line = whileStack.pop();
                 NewExp exp3 = new NewExp(++expCount,"goto","","",while_line,"");
                 expressions.add(exp3);
+
                 recover(while_line);
                 break;
                 default:break;
@@ -216,14 +238,24 @@ public class GrammaticalAnalysis {
             index++;
             syn = words.get(index).getTypenum();
         }else {
-            match(26);
-            arg = expression();
-            match(27);
+            if (syn == 26) {
+                match(26);
+                arg = expression();
+                match(27);
+            }else {
+                Error error = new Error("第"+ words.get(index).getLinecount() + "行 缺少因子，表达式错误");
+                errors.add(error);
+                arg = "";
+            }
+
         }
         return arg;
     }
 
-
+    /**
+     * 判断该处是否正确
+     * @param stardar
+     */
     void match(int stardar) {
         if (syn == stardar) {
             index++;
@@ -231,11 +263,15 @@ public class GrammaticalAnalysis {
         }else{
             this.isSuccess = false;
             System.out.println("第"+ words.get(index).getLinecount()+"行缺少" + WordOfC.wordMap.get(stardar));
-//            index++;
-//            syn= words.get(index).getTypenum();
+            Error error = new Error("第"+ words.get(index).getLinecount()+"行缺少" + WordOfC.wordMap.get(stardar));
+            errors.add(error);
         }
     }
 
+    /**
+     * 产生新的临时变量
+     * @return
+     */
     public static String newTerm() {
         count++;
         return "T"+String.valueOf(count);
@@ -244,6 +280,11 @@ public class GrammaticalAnalysis {
     public List<Expression> getExpressions() {
         return expressions;
     }
+
+    /**
+     * 恢复之前还没写的goto的行数
+     * @param line
+     */
     public void recover(int line) {
       //  System.err.println(line);
         for (int i  = 0; i < expressions.size(); i++) {
@@ -254,6 +295,39 @@ public class GrammaticalAnalysis {
                 break;
 
             }
+        }
+    }
+
+    public List<Error> getErrors() {
+        return errors;
+    }
+
+    /**
+     * 处理无关项
+     */
+    public void dealIrrevelant() {
+        while(index<words.size() && syn == 34) {
+            index++;
+            syn = words.get(index).getTypenum();
+        }
+        if (syn == 2|| syn == 3||syn==10 || syn== 4|| syn == 7 ){
+            statement_Sequence();
+        }
+
+    }
+
+    public void dealWithError() {
+        while (index<words.size()&&syn != 2&& syn != 3&&syn!=10 && syn!= 4&& syn != 7 ) {
+            if (syn== 31) {
+                break;
+            }
+            Error error = new Error("第"+ words.get(index).getLinecount() + "行语句错误");
+            errors.add(error);
+            index++;
+            syn = words.get(index).getTypenum();
+        }
+        if (syn == 2|| syn == 3||syn==10 || syn== 4|| syn == 7 ){
+            statement_Sequence();
         }
     }
 }
