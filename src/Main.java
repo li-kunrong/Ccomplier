@@ -7,6 +7,9 @@ import java.util.Map;
 import File.Word;
 import complier.GrammaticalAnalysis;
 
+/**
+ * 命令窗口
+ */
 public class Main {
 
     public static void main(String []args){
@@ -27,7 +30,7 @@ public class Main {
         for (int i =0; i < ga.getExpressions().size(); i++) {
             System.out.println(ga.getExpressions().get(i).toString());
         }
-
+        ;;;;;;
 
 
 

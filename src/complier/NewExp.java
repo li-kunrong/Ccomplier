@@ -10,7 +10,8 @@ public class NewExp extends Expression {
     private String syn_goto = "";
     private int lineCount = 0;
     private String flag = "";
-    public NewExp( int count, String syn_if, String condition, String syn_goto, int lineCount,String flag) {
+
+    public NewExp(int count, String syn_if, String condition, String syn_goto, int lineCount, String flag) {
         super();
         super.setCount(count);
         this.syn_if = syn_if;
@@ -19,13 +20,17 @@ public class NewExp extends Expression {
         this.lineCount = lineCount;
     }
 
+    //    @Override
+//    public String toString() {
+//        return "count: " + super.getCount()+  " " +syn_if + " " + condition + " " + syn_goto + " " + lineCount;
+//    }
     @Override
     public String toString() {
-        return "count: " + super.getCount()+  " " +syn_if + " " + condition + " " + syn_goto + " " + lineCount;
+        return  syn_if + " " + condition + " " + syn_goto + " " + lineCount;
     }
 
-    public NewExp(int count,String res, String arg1, String op, String arg2) {
-        super(count,res, arg1, op, arg2);
+    public NewExp(int count, String res, String arg1, String op, String arg2) {
+        super(count, res, arg1, op, arg2);
     }
 
     public String getSyn_if() {
